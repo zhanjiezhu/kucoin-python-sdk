@@ -20,7 +20,7 @@ except (ModuleNotFoundError, pkg_resources.DistributionNotFound):
 
 class KucoinBaseRestApi(object):
 
-    def __init__(self, key='', secret='', passphrase='', is_sandbox=False, url='', is_v1api=False):
+    def __init__(self, key='', secret='', passphrase='', is_sandbox=False, url='', is_v1api=False, use_session=False):
         """
         https://docs.kucoin.com
 
@@ -45,6 +45,8 @@ class KucoinBaseRestApi(object):
         self.secret = secret
         self.passphrase = passphrase
         self.is_v1api = is_v1api
+        self.session = requests.Session()
+        self.use_session = use_session
 
     def _request(self, method, uri, timeout=5, auth=True, params=None):
         uri_path = uri
@@ -92,10 +94,16 @@ class KucoinBaseRestApi(object):
         url = urljoin(self.url, uri)
 
         if method in ['GET', 'DELETE']:
-            response_data = requests.request(method, url, headers=headers, timeout=timeout)
+            if self.use_session:
+                response_data = self.session.request(method, url, headers=headers, timeout=timeout)
+            else:
+                response_data = requests.request(method, url, headers=headers, timeout=timeout)
         else:
-            response_data = requests.request(method, url, headers=headers, data=data_json,
+            if self.use_session:
+                response_data = self.session.request(method, url, headers=headers, data=data_json,
                                              timeout=timeout)
+            else:
+                response_data = requests.request(method, url, headers=headers, data=data_json, timeout=timeout)
         return self.check_response_data(response_data)
 
     @staticmethod
